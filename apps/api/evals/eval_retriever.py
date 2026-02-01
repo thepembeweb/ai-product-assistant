@@ -15,8 +15,6 @@ from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.dataset_schema import SingleTurnSample 
 from ragas.metrics import IDBasedContextPrecision, IDBasedContextRecall, Faithfulness, ResponseRelevancy
 
-os.environ["LANGCHAIN_CONCURRENCY_LIMIT"] = "10"
-
 ls_client = Client()
 qdrant_client = QdrantClient(
     url=f"http://localhost:6333"
@@ -26,7 +24,7 @@ ragas_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4.1-mini"))
 ragas_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-small"))
 
 
-async def ragas_faithfulness(run, example):
+def ragas_faithfulness(run, example):
 
     sample = SingleTurnSample(
             user_input=run.outputs["question"],
@@ -35,10 +33,10 @@ async def ragas_faithfulness(run, example):
         )
     scorer = Faithfulness(llm=ragas_llm)
 
-    return await scorer.single_turn_ascore(sample)
+    return scorer.single_turn_score(sample)
 
 
-async def ragas_responce_relevancy(run, example):
+def ragas_responce_relevancy(run, example):
 
     sample = SingleTurnSample(
             user_input=run.outputs["question"],
@@ -47,10 +45,10 @@ async def ragas_responce_relevancy(run, example):
         )
     scorer = ResponseRelevancy(llm=ragas_llm, embeddings=ragas_embeddings)
 
-    return await scorer.single_turn_ascore(sample)
+    return scorer.single_turn_score(sample)
 
 
-async def ragas_context_precision_id_based(run, example):
+def ragas_context_precision_id_based(run, example):
 
     sample = SingleTurnSample(
             retrieved_context_ids=run.outputs["retrieved_context_ids"],
@@ -58,10 +56,10 @@ async def ragas_context_precision_id_based(run, example):
         )
     scorer = IDBasedContextPrecision()
 
-    return await scorer.single_turn_ascore(sample)
+    return scorer.single_turn_score(sample)
 
 
-async def ragas_context_recall_id_based(run, example):
+def ragas_context_recall_id_based(run, example):
 
     sample = SingleTurnSample(
             retrieved_context_ids=run.outputs["retrieved_context_ids"],
@@ -69,7 +67,7 @@ async def ragas_context_recall_id_based(run, example):
         )
     scorer = IDBasedContextRecall()
 
-    return await scorer.single_turn_ascore(sample)
+    return scorer.single_turn_score(sample)
 
 
 results = ls_client.evaluate(
@@ -79,7 +77,7 @@ results = ls_client.evaluate(
         ragas_faithfulness,
         ragas_responce_relevancy,
         ragas_context_precision_id_based,
-        ragas_context_recall_id_based
+        ragas_context_recall_id_based,
     ],
-    experiment_prefix="retriever",
+    experiment_prefix="retriever"
 )
